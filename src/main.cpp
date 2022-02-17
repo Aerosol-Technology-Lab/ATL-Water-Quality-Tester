@@ -1,6 +1,5 @@
 #include "EC.h"
 #include "PH.h"
-#include "Command.h"
 #include "utils.h"
 #include <Arduino.h>
 
@@ -9,12 +8,11 @@
 char buffer[256];
 uint16_t bufferPtr = 0;
 
-CommandContainer_t container;
-Command serialCommands[3];
-
 // Sensors
-PH ph(A0);
-EC ec(A1);
+PH ph(A3);
+EC ec(A2);
+const uint8_t turb = A0;
+const uint8_t TDS = A1;
 
 // Water Temperature
 #ifdef USE_WATER_TEMPERATURE
@@ -97,6 +95,8 @@ uint8_t help(const char *command, size_t size)
     }
 }
 
+// @deprecated
+/*
 uint8_t phCommand(const char *command, size_t size)
 {
     char nxtWord[32] = { 0 };
@@ -107,6 +107,7 @@ uint8_t phCommand(const char *command, size_t size)
     sprintf(number, "/res ph %.4f\r\n");
     Serial.print(number);
 }
+*/
 
 void setup()
 {
@@ -119,13 +120,6 @@ void setup()
     ec.setWaterTemperatureSensor(&waterTemperature);    
 #endif
 
-    container = {
-        .command = serialCommands,
-        .size    = 0,
-        .maxSize = sizeof(serialCommands),
-    };
-
-    Command_addToList(&container, help);
 }
 
 void loop()
@@ -193,7 +187,7 @@ void loop()
         char *pch = strtok(c_input, SPLITTER);
         
         if (pch == nullptr) {
-            Serial.println("/err: Invalid command");
+            Serial.println(F("/err: Invalid command"));
             return;
         }
 
@@ -214,9 +208,9 @@ void loop()
 
             pch = strtok(nullptr, SPLITTER);
             if (pch == nullptr) {
-                char output[32];
-                sprintf(output, "/ph %.4f", ph.read());
-                Serial.print(output);
+                double phVal = ph.read();
+                Serial.print("/ph ");
+                Serial.println(phVal);
             }
             else {
 
@@ -229,16 +223,12 @@ void loop()
                     // else if pch is equal to "set", set the calibration value with the neutral voltage and acid voltage
                     // else the command is invalid
                     if (pch == nullptr) {
-                        Serial.println("/err: ph calibrate - unknown command");
+                        Serial.println(F("/err: ph calibrate - unknown command"));
                         return;
                     }
                     else if (strcmp(pch, "start") == 0) {
 
-                        {
-                            char output[32];
-                            sprintf(output, "/ph calibrate start\r\n");
-                            Serial.print(output);
-                        }
+                        Serial.print(F("/ph calibrate start\r\n"));
 
                         // MARKER
 
@@ -264,48 +254,46 @@ void loop()
                             Serial.print(output);
                         }
                         else {
-                            sprintf(output, "/ph: calibration values unchanged\r\n");
-                            Serial.print(output);
+                            Serial.println(F("/ph: calibration values unchanged"));
                         }
 
-                        {
-                            char output[32];
-                            sprintf(output, "/ph calibrate end\r\n");
-                            Serial.print(output);
-                        }
+                        Serial.println(F("/ph calibration end\r\n"));
                     }
                     else if (strcmp(pch, "get") == 0) {
                         char output[64];
                         float neutralVoltage, acidVoltage;
                         ph.getCalibration(neutralVoltage, acidVoltage);
-                        sprintf(output, "/ph calibration data %.4f %.4f\r\n", neutralVoltage, acidVoltage);
                         Serial.print(output);
+                        Serial.print(F("/ph calibration data "));
+                        Serial.print(neutralVoltage);
+                        Serial.print(" ");
+                        Serial.println(acidVoltage);
                     }
                     else if (strcmp(pch, "set") == 0) {
                         pch = strtok(nullptr, SPLITTER);
                         if (pch == nullptr) {
-                            Serial.println("/err: ph calibration set missing neutral voltage");
+                            Serial.println(F("/err: ph calibration set missing neutral voltage"));
                             return;
                         }
 
                         float neutral = atof(pch);
                         pch = strtok(nullptr, SPLITTER);
                         if (pch == nullptr) {
-                            Serial.println("/err: ph calibration set missing acid voltage");
+                            Serial.println(F("/err: ph calibration set missing acid voltage"));
                             return;
                         }
 
                         float acid = atof(pch);
                         ph.setCalibration(neutral, acid);
-                        Serial.println("/ph calibration set success");
+                        Serial.println(F("/ph calibration set success"));
                     }
                     else {
-                        Serial.println("/err: Invalid command");
+                        Serial.println(F("/err: Invalid command"));
                         return;
                     }
                 }
                 else {
-                    Serial.print("/err: Invalid command");
+                    Serial.print(F("/err: Invalid command"));
                 }
             }
         }
@@ -319,9 +307,9 @@ void loop()
             // else if pch is equal to "set", set the ec calibration value with the neutral voltage and acid voltage
             // else the command is invalid
             if (pch == nullptr) {
-                char output[32];
-                sprintf(output, "/ec %.4f\r\n", ec.read());
-                Serial.print(output);
+                float ecVal = ec.read();
+                Serial.print("/ec ");
+                Serial.println(ecVal);
             }
             else if (strcmp(pch, "calibrate") == 0) {
                 
@@ -394,6 +382,82 @@ void loop()
                     if (high < low) Utils::swap(low, high);
                     ec.setCalibration(low, high);
                     Serial.println("/ec calibration set success");
+                }
+            }
+        }
+        else if (strcmp(pch, "turb") == 0) {
+
+            static float m = 1.0f;
+            static float b = 0.0f;
+
+            pch = strtok(nullptr, SPLITTER);
+
+            if (!pch) {
+
+                float turbidity = analogRead(turb);
+                float turbidityValues[5];
+                for (float &val : turbidityValues) {
+                    delay(20);
+                    val = analogRead(turb);
+                }
+
+                // sort the values
+                for (int i = 0; i < sizeof(turbidityValues) / sizeof(turbidityValues[0]) - 1; ++i) {
+
+                    int smallestIdx = i;
+                    for (int j = i + 1; j < sizeof(turbidityValues) / sizeof(turbidityValues[0]); ++j) {
+
+                        if (turbidityValues[j] < turbidityValues[smallestIdx]) smallestIdx = j;
+                    }
+
+                    Utils::swap(turbidityValues[i], turbidityValues[smallestIdx]);
+                }
+
+                Serial.print(F("/turb "));
+                Serial.println(turbidityValues[2] * m + b);
+            }
+            else {
+
+                if (!strcmp(pch, "calibrate")) {
+                    
+                    pch = strtok(nullptr, SPLITTER);
+
+                    if (!strcmp(pch, "set")) {
+
+                        pch = strtok(nullptr, SPLITTER);
+                        if (!pch) {
+                            Serial.println(F("/err: turb calibration set missing slope and base"));
+                            return;
+                        }
+                        float mNew = atof(pch);
+                        
+                        pch = strtok(nullptr, SPLITTER);
+                        if (!pch) {
+                            Serial.println(F("/err: turb calibration set missing base"));
+                            return;
+                        }
+                        
+                        b = atof(pch);
+                        m = mNew;
+                    }
+                    else if (!strcmp(pch, "get")) {
+
+                        char output[64];
+                        Serial.print("/turb calibration data m:");
+                        Serial.print(m);
+                        Serial.print(" b:");
+                        Serial.println(b);
+                    }
+                }
+                else if (!strcmp(pch, "help")) {
+
+                    Serial.println("/turb Turbidity list of commands");
+                    Serial.println("/turb           - show the turbidity value");
+                    Serial.println("/turb calibrate - calibrate the turbidity sensor");
+                    Serial.println("/turb help      - show this help");
+                }
+                else {
+                    Serial.println("/err: turb invalid command");
                 }
             }
         }

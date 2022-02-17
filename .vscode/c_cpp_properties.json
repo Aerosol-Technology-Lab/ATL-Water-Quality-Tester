@@ -10,8 +10,8 @@
             "includePath": [
                 "/home/charliew/Documents/dev/Sensor Box/include",
                 "/home/charliew/Documents/dev/Sensor Box/src",
-                "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/uno/DallasTemperature",
-                "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/uno/OneWire",
+                "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/Uno/DallasTemperature",
+                "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/Uno/OneWire",
                 "/home/charliew/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "/home/charliew/.platformio/packages/framework-arduino-avr/variants/standard",
                 "/home/charliew/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
@@ -27,8 +27,8 @@
                 "path": [
                     "/home/charliew/Documents/dev/Sensor Box/include",
                     "/home/charliew/Documents/dev/Sensor Box/src",
-                    "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/uno/DallasTemperature",
-                    "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/uno/OneWire",
+                    "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/Uno/DallasTemperature",
+                    "/home/charliew/Documents/dev/Sensor Box/.pio/libdeps/Uno/OneWire",
                     "/home/charliew/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "/home/charliew/.platformio/packages/framework-arduino-avr/variants/standard",
                     "/home/charliew/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
