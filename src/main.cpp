@@ -133,8 +133,10 @@ void loop()
             return;
         }
 
-        char c_input[64] = { 0 };
+        // how long the program waits for input until it processes the incoming data
         const long timeout = 1000;
+
+        char c_input[64] = { '\0' };        // The '\0' indicates the end of the string. To make it easy for us, the whole c-string is set to \0
         long start = millis();
         size_t bytesBufferRead = 0;
         do {
@@ -145,10 +147,12 @@ void loop()
                 if (c == '\r' || c == '\n') {
                     break;
                 }
-                else if (bytesBufferRead + 1 == sizeof(c_input)) {
+                else if (bytesBufferRead == sizeof(c_input) - 1) {  // a c-string must end with a '\0'. This ensures that if c_input has 64 bytes
+                                                                    // of space, the object can only accept at most 63 characters + 1 character for
+                                                                    // the '\0' character
 
                     char output[64];
-                    sprintf(output, "/err: Too many characters received. Maximum command must be %d characters\r\n", sizeof(c_input) - 1);
+                    // sprintf(output, "/err: Too many characters received. Maximum command must be %d characters\r\n", sizeof(c_input) - 1);
                     Serial.print(output);
                     return;
                 }
@@ -157,7 +161,6 @@ void loop()
                 start = millis();
             }
         } while (millis() - start < timeout);
-        c_input[bytesBufferRead++] = '\0';
         
         {
             char output[128];
