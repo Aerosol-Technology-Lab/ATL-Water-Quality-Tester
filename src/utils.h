@@ -159,8 +159,9 @@ namespace Utils {
         RSTC->RSTC_MR = 0xA5000801;
         RSTC->RSTC_CR = 0xA5000013;
 #elif defined(__AVR_ATmega328P__)
+        // this is intentional, this will segfault the Arduino, thus this is an intentional self-kill
         void (*f)() = nullptr;
-      f();
+        f();
 #else
 #error "Define a reset functionality for an equivalent board. A hardware reset is preffered"
 #endif
